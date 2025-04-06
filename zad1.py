@@ -29,8 +29,8 @@ def check_encoded(encoded_text):
             for i in range(16):
                 char[i] = 1 - char[i]
                 break
-            result.append(char[:8])
-        return result
+        result.append(char[:8])
+    return result
 
 def decoding(decoded_text):
     result = []
