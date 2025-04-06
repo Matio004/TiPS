@@ -12,7 +12,7 @@ H = numpy.array(
         [1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1]
     ], dtype=numpy.int64
 )
-print(H[:, :8])
+
 def encoding(text):
     result = []
     for char in text:
@@ -33,12 +33,7 @@ def check_encoded(encoded_text):
     return result
 
 def decoding(decoded_text):
-    result = []
+    result = ''
     for byte in decoded_text:
-        char = chr(int(''.join(map(str,byte)), 2))
-        result.append(char)
-    return ''.join(result)
-
-
-
-
+        result += chr(int(''.join(map(str,byte)), 2))
+    return result

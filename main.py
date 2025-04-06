@@ -1,7 +1,7 @@
 from zad1 import encoding, check_encoded, decoding
 
 def main():
-    text = "Mateusz"
+    text = "To jest tekst"
     print("Tekst originalnie:", text)
 
     encoded = encoding(text)
