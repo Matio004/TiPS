@@ -27,8 +27,16 @@ def check_encoded(encoded_text):
         syndrome = numpy.dot(H, char) % 2
         if any(syndrome):
             for i in range(16):
-                char[i] = 1 - char[i]
-                break
+                if numpy.array_equal(H[:, i], syndrome):
+                    char[i] = 1 - char[i]
+                    break
+            else:
+                for i in range(16):
+                    for j in range(i + 1, 16):
+                        if numpy.array_equal(H[:, i] ^ H[:, j], syndrome):
+                            char[i] ^= 1
+                            char[j] ^= 1
+                            break
         result.append(char[:8])
     return result
 

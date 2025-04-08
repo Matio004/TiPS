@@ -9,7 +9,8 @@ def main():
     for block in encoded:
         print(block)
 
-    encoded[1][0] ^= 1
+    encoded[0][0] ^= 1
+    encoded[0][1] ^= 1
     print("\nPo flipie:")
     for block in encoded:
         print(block)
