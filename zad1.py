@@ -37,11 +37,11 @@ def check_encoded(encoded_text):
                             char[i] ^= 1
                             char[j] ^= 1
                             break
-        result.append(char[:8])
+        result.append(char)
     return result
 
 def decoding(decoded_text):
     result = ''
     for byte in decoded_text:
-        result += chr(int(''.join(map(str,byte)), 2))
+        result += chr(int(''.join(map(str, byte[:8])), 2))
     return result
