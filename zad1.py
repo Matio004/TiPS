@@ -41,7 +41,4 @@ def check_encoded(encoded_text):
     return result
 
 def decoding(decoded_text):
-    result = ''
-    for byte in decoded_text:
-        result += chr(int(''.join(map(str, byte[:8])), 2))
-    return result
+    return ''.join([chr(int(''.join(map(str, byte[:8])), 2)) for byte in decoded_text])
