@@ -98,7 +98,7 @@ int writeAll(const std::vector<uint8_t>& buffer) {
     return static_cast<int>(bytesWritten);
 }
 
-// Zapis pojedynczego bajtu do portu
+
 int writeByte(uint8_t byte) {
     std::vector buffer = {byte};
     return writeAll(buffer);
@@ -141,11 +141,11 @@ bool receiveFile(const std::string& path) {
 
         if (readByteWithTimeout(headerByte) > 0) {
             if (headerByte == SOH) {
-                // Otrzymaliśmy SOH, rozpoczynamy odbieranie danych
+
                 receiving = true;
                 break;
             } else if (headerByte == EOT) {
-                // Przypadek pustego pliku
+
                 writeByte(ACK);
                 file.close();
                 return true;
@@ -162,7 +162,7 @@ bool receiveFile(const std::string& path) {
                 else writeByte(NAK);
                 continue;
             }
-           // Weryfikacja numeru bloku i jego dopełnienia
+
             if (blockNumber + blockNumberComplement != 255) {
                 if (useCRC) writeByte(C);
                 else writeByte(NAK);
@@ -179,7 +179,7 @@ bool receiveFile(const std::string& path) {
         bool checksumValid;
 
         if (useCRC) {
-            // Odczyt 2 bajtów CRC
+
             uint8_t crcHigh, crcLow;
             if (readByteWithTimeout(crcHigh) <= 0 || readByteWithTimeout(crcLow) <= 0) {
                 std::cerr << "Błąd odczytu CRC" << std::endl;
@@ -192,7 +192,7 @@ bool receiveFile(const std::string& path) {
 
             checksumValid = (receivedCRC == calculatedCRC);
         } else {
-            // Odczyt 1 bajtu sumy kontrolnej
+
             uint8_t receivedChecksum;
             if (readByteWithTimeout(receivedChecksum) <= 0) {
                 std::cerr << "Błąd odczytu sumy kontrolnej" << std::endl;
@@ -209,46 +209,46 @@ bool receiveFile(const std::string& path) {
             continue;
         }
 
-        // Obsługa duplikatu bloku
+
                 if (blockNumber == (expectedBlock - 1) && expectedBlock > 1) {
-                    // Potwierdzenie duplikatu bloku, ale bez zapisywania do pliku
+
                     writeByte(ACK);
                 } else if (blockNumber == expectedBlock) {
-                    // Zapis danych do pliku
+
                     file.write(reinterpret_cast<const char*>(dataBlock.data()), dataBlock.size());
                     writeByte(ACK);
                     expectedBlock++;
                 } else {
-                    // Nieoczekiwany numer bloku
+
                     writeByte(NAK);
                     continue;
                 }
 
-                // Odczyt nagłówka następnego pakietu
+
                 if (readByteWithTimeout(headerByte) <= 0) {
                     writeByte(NAK);
                     continue;
                 }
 
                 if (headerByte == EOT) {
-                    // Koniec transmisji
+
                     writeByte(ACK);
                     receiving = false;
                 } else if (headerByte != SOH) {
-                    // Nieoczekiwany znak kontrolny
+
                     writeByte(NAK);
                     continue;
                 }
         }
         else if (headerByte == EOT) {
-            // Koniec transmisji
+
             writeByte(ACK);
             receiving = false;
         } else {
-            // Nieoczekiwany znak kontrolny
+
             writeByte(NAK);
 
-            // Próba ponownego odczytu nagłówka
+
             if (readByteWithTimeout(headerByte) <= 0) {
                 continue;
             }
@@ -272,7 +272,6 @@ bool sendFile(const std::string& path) {
         bool waitingForInitiation = true;
         int retries = 0;
 
-        // Oczekiwanie na NAK lub C od odbiornika, aby rozpocząć transmisję
         while (waitingForInitiation && retries < MAX_RETRIES) {
             if (readByteWithTimeout(response) > 0) {
                 if (response == NAK) {
@@ -291,13 +290,11 @@ bool sendFile(const std::string& path) {
             return false;
         }
 
-        // Rozpoczęcie wysyłania bloków
         while (true) {
             file.read(reinterpret_cast<char*>(buffer.data()), BLOCK_SIZE);
             size_t bytesRead = file.gcount();
 
             if (bytesRead == 0) {
-                // Koniec pliku, wysyłamy EOT
                 bool eotAcked = false;
                 retries = 0;
 
@@ -320,7 +317,6 @@ bool sendFile(const std::string& path) {
                 break;
             }
 
-            // Uzupełnienie bloku znakami SUB (0x1A), jeśli potrzeba
             if (bytesRead < BLOCK_SIZE) {
                 std::fill(buffer.begin() + bytesRead, buffer.end(), 0x1A);
             }
@@ -329,9 +325,7 @@ bool sendFile(const std::string& path) {
             retries = 0;
 
             while (!blockAcked && retries < MAX_RETRIES) {
-                // Przygotowanie pakietu
                 if (useCRC) {
-                    // SOH + blockNumber + ~blockNumber + dane + CRC (2 bajty)
                     packet.resize(BLOCK_SIZE + 5);
                     packet[0] = SOH;
                     packet[1] = blockNumber;
@@ -339,10 +333,9 @@ bool sendFile(const std::string& path) {
                     std::copy(buffer.begin(), buffer.end(), packet.begin() + 3);
 
                     uint16_t crc = calculateCRC16(buffer);
-                    packet[BLOCK_SIZE + 3] = (crc >> 8) & 0xFF; // MSB
-                    packet[BLOCK_SIZE + 4] = crc & 0xFF;        // LSB
+                    packet[BLOCK_SIZE + 3] = (crc >> 8) & 0xFF;
+                    packet[BLOCK_SIZE + 4] = crc & 0xFF;
                 } else {
-                    // SOH + blockNumber + ~blockNumber + dane + suma kontrolna (1 bajt)
                     packet.resize(BLOCK_SIZE + 4);
                     packet[0] = SOH;
                     packet[1] = blockNumber;
@@ -351,10 +344,8 @@ bool sendFile(const std::string& path) {
                     packet[BLOCK_SIZE + 3] = calculateChecksum(buffer);
                 }
 
-                // Wysyłanie pakietu
                 writeAll(packet);
 
-                // Oczekiwanie na ACK lub NAK
                 if (readByteWithTimeout(response) > 0) {
                     if (response == ACK) {
                         blockAcked = true;
