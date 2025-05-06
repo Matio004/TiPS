@@ -64,7 +64,7 @@ if __name__ == '__main__':
             address = input('Podaj adres docelowy: ')
             port = int(input('Podaj port docelowy: '))
 
-            with open('input.txt', 'rt') as file:
+            with open('input.txt', 'rt', encoding='utf-8') as file:
                 text = file.read()
             counter = Counter(text)
             tree = huffman_tree(counter)

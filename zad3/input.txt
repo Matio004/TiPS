@@ -1,11 +1,57 @@
+ąęśćżźół            encoded = encode(text, dictionary)
+
+            # sending
+            message = {
+                'code_dict': dictionary,
+                'data': encoded
+            }
 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut consequat, magna et posuere fermentum, justo mi vulputate neque, varius condimentum augue magna id lorem. Donec magna libero, consectetur eu semper nec, sodales sit amet eros. Cras lobortis pharetra nunc, at porttitor metus porttitor a. Fusce feugiat molestie dolor a malesuada. Curabitur erat lacus, sagittis interdum gravida quis, semper ut eros. Sed ac semper lectus, sed varius sem. Mauris sollicitudin, risus a elementum viverra, augue dolor pulvinar leo, lobortis gravida lacus ante ac ex. Mauris pretium lorem enim, at semper mi molestie euismod. Vestibulum a ligula vel mi euismod fermentum id id elit. Sed et lorem id massa sodales pharetra et sit amet leo. Phasellus porta dolor eget dui varius, non elementum tellus vehicula.
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((address, port))
+                s.sendall(json.dumps(message).encode('utf-8'))
+        case 1:
+            port = int(input('Nasłuchuj na porcie: '))
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('0.0.0.0', port))
+                s.listen()
+                conn, addr = s.accept()
+                with conn:
+                    print(f"Połączono z: {addr}")
+                    data = conn.recv(65536)
+                    msg = json.loads(data.decode('utf-8'))
 
-Quisque sagittis lacus eros, vitae lacinia nulla mollis id. Aenean vel eros congue, elementum dui eu, dictum mi. Maecenas ut turpis neque. Praesent semper, urna ut feugiat dapibus, lectus leo efficitur velit, eu lobortis nunc lorem sed nisl. Praesent eleifend sit amet augue eget iaculis. Curabitur quam turpis, eleifend et ante a, maximus ullamcorper dolor. Nam in dolor laoreet, malesuada nunc consequat, tristique nunc. Suspendisse ut odio dapibus ex pretium auctor ut ut turpis. Fusce nec diam ac nisl pulvinar pellentesque. Integer eget quam sed arcu tempus efficitur. Integer accumsan neque sed mi rutrum, vitae suscipit urna pulvinar.
+                    decoded = decode(msg['data'], msg['code_dict'])
+                    print('Odebrany tekst:', decoded, sep='\n')
+                    with open("odebrany_plik.txt", "w", encoding="utf-8") as f:
+                        f.write(decoded)
 
-Nam eleifend urna vitae lacinia sollicitudin. Fusce porta eros neque, nec maximus nunc posuere non. Morbi nibh risus, finibus sed risus ut, ultrices dictum ligula. Sed justo diam, maximus eu sagittis nec, pretium a nibh. Nulla sit amet sodales tortor. Proin ornare lorem sit amet augue euismod, sit amet vulputate leo aliquet. Donec massa massa, ullamcorper sed mattis ac, accumsan at tellus. In et eleifend velit, et sollicitudin augue. Cras augue sem, viverra vel urna quis, ornare lacinia enim.
+                    print("Plik został zapisany jako 'odebrany_plik.txt'")
+ChatGPT powiedział:
 
-Phasellus rutrum est vitae bibendum eleifend. Aenean eget metus erat. Integer tempus nibh ac mi hendrerit maximus. Nunc rutrum turpis sit amet tellus faucibus, et malesuada mi pharetra. Suspendisse maximus rutrum lacus, non suscipit augue elementum eu. Sed et sem eget augue tristique lobortis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Integer eget sem vitae quam vulputate auctor id eget justo. Praesent non turpis hendrerit, tempor felis vitae, lobortis ligula. Proin suscipit erat eget faucibus blandit. Nulla vel elit ipsum.
+Błąd, który widzisz:
 
-Nulla facilisi. Nullam porttitor eleifend enim id fermentum. Mauris scelerisque vitae mi non consectetur. Curabitur erat sapien, efficitur ut dignissim a, finibus vel lectus. Morbi orci ligula, auctor non metus eget, scelerisque maximus erat. Suspendisse potenti. Etiam varius dolor non gravida finibus. Proin gravida enim in posuere egestas. Phasellus porttitor lacinia tincidunt. Praesent finibus hendrerit nisl, sit amet accumsan nunc facilisis quis. Maecenas lacinia, tellus nec dignissim pharetra, velit nulla posuere nibh, in suscipit elit urna at diam. 
+json.decoder.JSONDecodeError: Unterminated string starting at: line 1 column 1205 (char 1204)
+
+oznacza, że odebrany JSON jest niekompletny lub uszkodzony — w szczególności wygląda, jakby wysłany JSON nie został w całości odebrany przez recv.
+Problem
+
+conn.recv(65536) odbiera tylko jedną porcję danych — ale w TCP nie masz gwarancji, że cały JSON zostanie odebrany w jednym wywołaniu recv. Nawet jeśli sendall() po stronie nadawcy wysyła cały tekst na raz, odbiorca może dostać to w fragmentach.
+Rozwiązanie
+
+Musisz zaimplementować mechanizm odbioru danych w pętli — aż wszystkie dane zostaną odebrane. Można to zrobić na dwa sposoby:
+Opcja 1: Odbieranie do zamknięcia połączenia (prosta, skuteczna)
+
+Zmieniamy kod odbiorcy:
+
+data = b''
+while True:
+    packet = conn.recv(4096)
+    if not packet:
+        break
+    data += packet
+msg = json.loads(data.decode('utf-8'))
+
+Opcja 2: Dodanie długości wiadomości (bardziej niezawodne)
+
+Jeśli chcesz mieć pełną kontrolę, możesz najpierw wysłać długość wiadomości jako nagłówek, potem dane. Ale opcja 1 będzie wystarczająca dla prostych zastosowań lokalnych.
