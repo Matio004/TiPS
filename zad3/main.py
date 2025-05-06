@@ -59,7 +59,7 @@ def decode(text, dictionary: dict):
 
 
 if __name__ == '__main__':
-    match int(input('0. Wyślij\n1. Odbierz')):
+    match int(input('0. Wyślij\n1. Odbierz\n\n')):
         case 0:
             address = input('Podaj adres docelowy: ')
             port = int(input('Podaj port docelowy: '))
