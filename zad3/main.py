@@ -90,7 +90,12 @@ if __name__ == '__main__':
                 conn, addr = s.accept()
                 with conn:
                     print(f"Połączono z: {addr}")
-                    data = conn.recv(65536)
+                    data = b''
+                    while True:
+                        packet = conn.recv(4096)
+                        if not packet:
+                            break
+                        data += packet
                     msg = json.loads(data.decode('utf-8'))
 
                     decoded = decode(msg['data'], msg['code_dict'])
