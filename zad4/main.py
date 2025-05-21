@@ -50,22 +50,27 @@ class AudioConverter:
         Zwraca:
         ndarray: skwantyzowany dźwięk
         """
-        # Normalizacja sygnału do przedziału [-1, 1]
-        if np.max(np.abs(audio)) > 0:
-            audio = audio / np.max(np.abs(audio))
+        if bits >= 32:
+            return audio.copy()
 
-        # Obliczenie liczby poziomów kwantyzacji
+            # Normalizacja sygnału do przedziału [-1, 1] tylko jeśli przekracza ten zakres
+        max_val = np.max(np.abs(audio))
+        if max_val > 1.0:
+            audio = audio / max_val
+
+        # Obliczenie przedziału kwantyzacji
         levels = 2 ** bits
+        step = 2.0 / levels
 
-        # Kwantyzacja
-        if bits < 32:  # Dla 32 bitów nie stosujemy kwantyzacji
-            # Mapowanie z [-1, 1] do [0, levels-1]
-            quantized = np.round((audio + 1) * (levels - 1) / 2)
-            # Mapowanie z powrotem do [-1, 1]
-            quantized = 2 * quantized / (levels - 1) - 1
-            return quantized
-        else:
-            return audio  # Dla 32 bitów zwracamy oryginalny sygnał
+        # Kwantyzacja (mapy wartości do najbliższego dozwolonego poziomu)
+        # Mapowanie z [-1, 1] do [0, levels-1]
+        quantized_indices = np.round((audio + 1.0) / step)
+        # Zapewnienie, że indeksy są w prawidłowym zakresie
+        quantized_indices = np.clip(quantized_indices, 0, levels - 1)
+        # Mapowanie z powrotem do [-1, 1]
+        quantized = quantized_indices * step - 1.0
+
+        return quantized
 
     def save_audio(self, audio, filename, sample_rate, subtype='PCM_16'):
         """
